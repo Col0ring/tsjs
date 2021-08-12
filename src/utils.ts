@@ -1,5 +1,5 @@
 export function isUndefined(val: any) {
-  return typeof val === 'undefined' || val === undefined
+  return val === undefined
 }
 
 export function isNumber(val: any) {

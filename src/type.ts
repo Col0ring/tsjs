@@ -1,4 +1,4 @@
-import { SyntaxType } from './constants'
+import { OperatorTokenType, SyntaxTokenType, ValueTokenType } from './constants'
 
 export interface PositionOptions {
   cursor: number
@@ -11,8 +11,8 @@ export interface LocationOptions {
   start: PositionOptions
   end: PositionOptions
 }
-export interface SyntaxNode<T = any> {
-  type: SyntaxType
+export interface SyntaxToken<T = any> {
+  type: SyntaxTokenType | ValueTokenType | OperatorTokenType
   value?: T
   loc: LocationOptions
 }

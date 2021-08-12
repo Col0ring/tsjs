@@ -1,7 +1,18 @@
-export enum SyntaxType {
-  EOF = 'EOF',
-  String = 'String',
-  Number = 'Number',
-  Whitespace = 'Whitespace',
-  Newline = 'NewLine'
+export enum SyntaxTokenType {
+  EOF = 'EOFToken',
+
+  Whitespace = 'WhitespaceToken',
+  Newline = 'NewLineToken'
+}
+
+export enum ValueTokenType {
+  String = 'StringToken',
+  Number = 'NumberToken'
+}
+
+export enum OperatorTokenType {
+  Plus = 'PlusOperatorToken',
+  Minus = 'MinusOperatorToken',
+  Multiplication = 'MultiplicationOperatorToken',
+  Division = 'DivisionOperatorToken'
 }

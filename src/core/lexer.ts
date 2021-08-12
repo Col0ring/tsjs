@@ -5,8 +5,12 @@ import {
   isUndefined,
   isWhitespace
 } from '../utils'
-import { SyntaxType } from '../constants'
-import { SyntaxNode } from '../type'
+import {
+  SyntaxTokenType,
+  ValueTokenType,
+  OperatorTokenType
+} from '../constants'
+import { SyntaxToken } from '../type'
 
 /**
  *
@@ -38,7 +42,33 @@ export function* lexer(file: string, str: string) {
     column = 1
   }
 
-  function number(): SyntaxNode<number> | null {
+  function operator(): SyntaxToken<string> | null {
+    const operators = {
+      '+': OperatorTokenType.Plus,
+      '-': OperatorTokenType.Minus,
+      '*': OperatorTokenType.Multiplication,
+      '/': OperatorTokenType.Division
+    }
+
+    const tokenType = operators[ch as keyof typeof operators]
+    if (tokenType) {
+      const start = position()
+      next()
+      const end = position()
+      return {
+        type: tokenType,
+        loc: {
+          file,
+          start,
+          end
+        }
+      }
+    }
+
+    return null
+  }
+
+  function number(): SyntaxToken<number> | null {
     let buffer = ''
     const start = position()
     while (isNumber(ch)) {
@@ -49,7 +79,7 @@ export function* lexer(file: string, str: string) {
     if (buffer) {
       const end = position()
       return {
-        type: SyntaxType.Number,
+        type: ValueTokenType.Number,
         value: +buffer,
         loc: {
           file,
@@ -62,7 +92,7 @@ export function* lexer(file: string, str: string) {
     return null
   }
 
-  function string(): SyntaxNode<string> | null {
+  function string(): SyntaxToken<string> | null {
     let buffer = ''
     const start = position()
     while (isString(ch)) {
@@ -73,7 +103,7 @@ export function* lexer(file: string, str: string) {
     if (buffer) {
       const end = position()
       return {
-        type: SyntaxType.String,
+        type: ValueTokenType.String,
         value: buffer,
         loc: {
           file,
@@ -86,7 +116,7 @@ export function* lexer(file: string, str: string) {
     return null
   }
 
-  function whitespace(): SyntaxNode | null {
+  function whitespace(): SyntaxToken | null {
     if (!isWhitespace(ch)) {
       return null
     }
@@ -98,7 +128,7 @@ export function* lexer(file: string, str: string) {
     }
     const end = position()
     return {
-      type: SyntaxType.Whitespace,
+      type: SyntaxTokenType.Whitespace,
       loc: {
         file,
         start,
@@ -107,14 +137,14 @@ export function* lexer(file: string, str: string) {
     }
   }
 
-  function eol(): SyntaxNode | null {
+  function eol(): SyntaxToken | null {
     if (isNewLine(ch)) {
       const start = position()
       next()
       nextLine()
       const end = position()
       return {
-        type: SyntaxType.Newline,
+        type: SyntaxTokenType.Newline,
         loc: {
           file,
           start,
@@ -126,13 +156,13 @@ export function* lexer(file: string, str: string) {
     return null
   }
 
-  function eof(): SyntaxNode | null {
+  function eof(): SyntaxToken | null {
     ch = str[cursor]
     if (isUndefined(ch)) {
       const start = position(),
         end = start
       return {
-        type: SyntaxType.EOF,
+        type: SyntaxTokenType.EOF,
         loc: {
           file,
           start,
@@ -144,11 +174,12 @@ export function* lexer(file: string, str: string) {
   }
 
   while (true) {
-    let token = whitespace() || number() || string() || eol() || eof()
+    let token =
+      whitespace() || number() || operator() || string() || eol() || eof()
 
     if (token) {
       yield token
-      if (token.type === SyntaxType.EOF) {
+      if (token.type === SyntaxTokenType.EOF) {
         break
       }
     } else {
