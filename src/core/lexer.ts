@@ -1,63 +1,125 @@
-import { isNumber, isString, isUndefined, isWhitespace } from '../utils'
+import {
+  isNewLine,
+  isNumber,
+  isString,
+  isUndefined,
+  isWhitespace
+} from '../utils'
 import { SyntaxType } from '../constants'
 import { SyntaxNode } from '../type'
 
-export function* lexer(str: string) {
+/**
+ *
+ * @param file filename
+ * @param str the source string
+ */
+export function* lexer(file: string, str: string) {
   // global variables
-  let cursor = 0
+  let cursor = 0 // the index cursor
+  let line = 1
+  let column = 1
   let ch = str[cursor]
+
+  function position() {
+    return { cursor, line, column }
+  }
 
   // next cursor
   function next() {
+    // cursor moving
     cursor++
     ch = str[cursor]
+    column++
   }
 
-  function whitespace(): SyntaxNode | null {
-    let buffer = ''
-    while (isWhitespace(ch)) {
-      buffer += ch
-      next()
-    }
-
-    if (buffer) {
-      return {
-        type: SyntaxType.Whitespace,
-        value: buffer
-      }
-    }
-
-    return null
+  // next line
+  function nextLine() {
+    line++
+    column = 1
   }
 
-  function number(): SyntaxNode | null {
+  function number(): SyntaxNode<number> | null {
     let buffer = ''
+    const start = position()
     while (isNumber(ch)) {
       buffer += ch
       next()
     }
 
     if (buffer) {
+      const end = position()
       return {
         type: SyntaxType.Number,
-        value: buffer
+        value: +buffer,
+        loc: {
+          file,
+          start,
+          end
+        }
       }
     }
 
     return null
   }
 
-  function string(): SyntaxNode | null {
+  function string(): SyntaxNode<string> | null {
     let buffer = ''
+    const start = position()
     while (isString(ch)) {
       buffer += ch
       next()
     }
 
     if (buffer) {
+      const end = position()
       return {
         type: SyntaxType.String,
-        value: buffer
+        value: buffer,
+        loc: {
+          file,
+          start,
+          end
+        }
+      }
+    }
+
+    return null
+  }
+
+  function whitespace(): SyntaxNode | null {
+    if (!isWhitespace(ch)) {
+      return null
+    }
+    // here is whitespace
+    next()
+    const start = position()
+    while (isWhitespace(ch)) {
+      next()
+    }
+    const end = position()
+    return {
+      type: SyntaxType.Whitespace,
+      loc: {
+        file,
+        start,
+        end
+      }
+    }
+  }
+
+  function eol(): SyntaxNode | null {
+    if (isNewLine(ch)) {
+      const start = position()
+      next()
+      nextLine()
+      const end = position()
+      return {
+        type: SyntaxType.Newline,
+        loc: {
+          file,
+          start,
+          end
+        }
       }
     }
 
@@ -67,29 +129,32 @@ export function* lexer(str: string) {
   function eof(): SyntaxNode | null {
     ch = str[cursor]
     if (isUndefined(ch)) {
+      const start = position(),
+        end = start
       return {
-        type: SyntaxType.EOF
+        type: SyntaxType.EOF,
+        loc: {
+          file,
+          start,
+          end
+        }
       }
     }
     return null
   }
 
   while (true) {
-    // we don't need whitespace
-    whitespace()
-
-    let token = number() || string() || /* whitespace() || */ eof()
+    let token = whitespace() || number() || string() || eol() || eof()
 
     if (token) {
-      //   if (token.type === SyntaxType.Whitespace) {
-      //     continue
-      //   }
       yield token
       if (token.type === SyntaxType.EOF) {
         break
       }
     } else {
-      throw new SyntaxError(`unexpected character "${ch}" at ${cursor + 1}`)
+      throw new SyntaxError(
+        `unexpected character "${ch}" at ${file}:${line}:${column}`
+      )
     }
   }
 }

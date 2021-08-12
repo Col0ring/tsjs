@@ -3,6 +3,7 @@ export function isUndefined(val: any) {
 }
 
 export function isNumber(val: any) {
+  // simpler and better performance: return val >= '0' && val <= '9'
   return typeof val === 'number' || /^[0-9]+$/.test(val)
 }
 
@@ -11,6 +12,10 @@ export function isString(val: any) {
 }
 
 export function isWhitespace(val: any) {
-  // \t \n and whitespace
-  return /^\W+$/.test(val)
+  // \t and whitespace, not \n
+  return val === ' ' || val === '\t'
+}
+
+export function isNewLine(val: any) {
+  return val === '\n'
 }
